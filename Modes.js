@@ -5,20 +5,19 @@ function Mode(label1, label2) {
 }
 
 Mode.prototype.onParamCategory = function(inc) {
-   if (kL.paramIsClicked) {
+   if(kL.paramIsClicked) {
       kL.presetCreatorHasChanged = true;
-      if (inc > 0) {
+      if(inc > 0) {
          kL.cDevice.switchToNextPresetCreator();
       }
-      else if (inc < 0) {
+      else if(inc < 0) {
          kL.cDevice.switchToPreviousPresetCreator();
       }
       sendTextToKeyLab("Preset Creator:", kL.currentCategory);
    }
    else {
       kL.presetCategoryHasChanged = true;
-
-      if (inc > 0) {
+      if(inc > 0) {
          kL.cDevice.switchToNextPresetCategory();
       }
       else {
@@ -28,12 +27,11 @@ Mode.prototype.onParamCategory = function(inc) {
    }
 };
 
-Mode.prototype.onParamCategoryClick = function(pressed) {
-};
+Mode.prototype.onParamCategoryClick = function(pressed) {};
 
 Mode.prototype.onValuePreset = function(inc) {
    kL.presetHasChanged = true;
-   if (inc > 0) {
+   if(inc > 0) {
       kL.cDevice.switchToNextPreset();
    }
    else {
@@ -42,20 +40,17 @@ Mode.prototype.onValuePreset = function(inc) {
    sendTextToKeyLab("Current Preset:", kL.currentPreset);
 };
 
-Mode.prototype.onValuePresetClick = function(pressed) {
-};
+Mode.prototype.onValuePresetClick = function(pressed) {};
 
 Mode.prototype.onVolumeEncoder = function(inc) {
    kL.cTrack.getVolume().inc(inc, 127);
    sendTextToKeyLab("Track Volume:", kL.currentVolume);
 };
 
-Mode.prototype.onSoundMultiPressed = function(soundOn) {
-};
-
+Mode.prototype.onSoundMultiPressed = function(soundOn) {};
 
 // Arturia Mode:
-var ARTURIA_MODE = new Mode("Arturia Mode ",  "(CC)");
+var ARTURIA_MODE = new Mode("Arturia Mode ", "(CC)");
 ARTURIA_MODE.encoderValues = initArray(64, 10);
 ARTURIA_MODE.volumeValue = 64;
 
@@ -63,7 +58,7 @@ ARTURIA_MODE.onEncoder = function(index, inc) {
    var oldVal = this.encoderValues[index];
    var val = Math.max(0, Math.min(127, oldVal + inc));
 
-   if (val != oldVal) {
+   if(val != oldVal) {
       this.encoderValues[index] = val;
       kL.midiInKeys.sendRawMidiEvent(0xB0, kL.knobBank1[index], val);
    }
@@ -74,7 +69,7 @@ ARTURIA_MODE.onVolumeEncoder = function(inc) {
    var oldVal = this.volumeValue;
    var val = Math.max(0, Math.min(127, oldVal + inc));
 
-   if (val != oldVal) {
+   if(val != oldVal) {
       this.volumeValue = val;
       kL.midiInKeys.sendRawMidiEvent(0xB0, kL.volume, val);
    }
@@ -107,7 +102,7 @@ ARTURIA_MODE.onValuePresetClick = function(pressed) {
 };
 
 ARTURIA_MODE.onButtonPress = function(index, pressed) {
-   if (pressed) {
+   if(pressed) {
       kL.buttonToggle[index] = !kL.buttonToggle[index];
    }
    kL.midiInKeys.sendRawMidiEvent(0xB0, kL.buttonBank[index], pressed ? 127 : 0);
@@ -118,27 +113,26 @@ ARTURIA_MODE.onSoundMultiPressed = function(soundOn) {
    kL.midiInKeys.sendRawMidiEvent(0xB0, (soundOn ? kL.sound : kL.multi), 127);
 }
 
-
 // Sound Mode:
 var SOUND_MODE = new Mode("Bitwig: ", "Sound Mode");
 
 SOUND_MODE.onEncoder = function(index, inc) {
-   if (index < 4) {
+   if(index < 4) {
       // 0 - 3
       setDeviceValue(index, kL.pageSelect, inc);
    }
-   else if (index === 4) {
+   else if(index === 4) {
       kL.trackAccumulator += Math.abs(inc);
-      if (kL.trackAccumulator > 4) {
+      if(kL.trackAccumulator > 4) {
          kL.trackAccumulator = 0;
          kL.trackHasChanged = true;
          inc < 0 ? kL.cTrack.selectPrevious() : kL.cTrack.selectNext();
       }
       kL.displayQueue.push(["Current Track:", kL.currentTrack]);
    }
-   else if (index === 9) {
+   else if(index === 9) {
       kL.deviceAccumulator += Math.abs(inc);
-      if (kL.deviceAccumulator > 4) {
+      if(kL.deviceAccumulator > 4) {
          kL.deviceAccumulator = 0;
          kL.deviceHasChanged = true;
          kL.cDevice.switchToDevice(DeviceType.ANY, inc < 0 ? ChainLocation.PREVIOUS : ChainLocation.NEXT);
@@ -153,7 +147,7 @@ SOUND_MODE.onEncoder = function(index, inc) {
 
 SOUND_MODE.onFader = function(index, value) {
    kL.cDevice.getEnvelopeParameter(index).set(value, 128);
-   if (kL.envelopeName[index] === "None") {
+   if(kL.envelopeName[index] === "None") {
       sendTextToKeyLab("Unassigned", "");
    }
    else {
@@ -163,14 +157,14 @@ SOUND_MODE.onFader = function(index, value) {
 };
 
 SOUND_MODE.onButtonPress = function(index, pressed) {
-   if (index === 0) {
+   if(index === 0) {
       // Macros:
       pressed ? kL.pageSelect = 0 : setButtonLight(0);
       setDeviceIndication(true);
       host.showPopupNotification("Active Controls: Device Macros");
       sendTextToKeyLab("Active Controls:", "Device Macros")
    }
-   else if (index === 1) {
+   else if(index === 1) {
       // Common:
       pressed ? kL.pageSelect = 1 : setButtonLight(1);
       setDeviceIndication(true);
@@ -186,7 +180,7 @@ SOUND_MODE.onButtonPress = function(index, pressed) {
 var MULTI_MODE = new Mode("Bitwig: ", "Mix Mode");
 
 MULTI_MODE.onEncoder = function(index, increment) {
-   switch (index) {
+   switch(index) {
       case 0:
          kL.cTrack.getPan().inc(increment, 127);
          sendTextToKeyLab("Pan:", kL.currentPan);
@@ -228,7 +222,7 @@ MULTI_MODE.onEncoder = function(index, increment) {
       case 4:
          // Move the Cursor Track:
          kL.trackAccumulator += Math.abs(increment);
-         if (kL.trackAccumulator > 4) {
+         if(kL.trackAccumulator > 4) {
             kL.trackAccumulator = 0;
             kL.trackHasChanged = true;
             increment < 0 ? kL.cTrack.selectPrevious() : kL.cTrack.selectNext();
@@ -240,7 +234,7 @@ MULTI_MODE.onEncoder = function(index, increment) {
          // Move the Track Bank:
          var scrollDirection = (increment < 0 ? "Up" : "Down");
          kL.trackBankAccumulator += Math.abs(increment);
-         if (kL.trackBankAccumulator > 4) {
+         if(kL.trackBankAccumulator > 4) {
             kL.trackBankAccumulator = 0;
             increment < 0 ? kL.tracks.scrollTracksUp() : kL.tracks.scrollTracksDown();
          }
@@ -250,7 +244,7 @@ MULTI_MODE.onEncoder = function(index, increment) {
 };
 
 MULTI_MODE.onFader = function(index, value) {
-   if (index === 8) {
+   if(index === 8) {
       kL.masterVolumeHasChanged = true;
       kL.masterTrack.getVolume().set(value, 128);
       //sendTextToKeyLab("Master Volume:", kL.masterVolume);
@@ -266,19 +260,27 @@ MULTI_MODE.onButtonPress = function(index, pressed) {
          sendTextToKeyLab("Unassigned", "");
          break;
       case 1:
-         if(pressed) {kL.application.toggleNoteEditor(); }
+         if(pressed) {
+            kL.application.toggleNoteEditor();
+         }
          sendTextToKeyLab("Note Editor", "");
          break;
       case 2:
-         if(pressed) {kL.application.toggleAutomationEditor(); }
+         if(pressed) {
+            kL.application.toggleAutomationEditor();
+         }
          sendTextToKeyLab("Automation", "Editor");
          break;
       case 3:
-         if(pressed) {kL.application.toggleDevices(); }
+         if(pressed) {
+            kL.application.toggleDevices();
+         }
          sendTextToKeyLab("Device Chain", "");
          break;
       case 4:
-         if(pressed) {kL.application.toggleMixer(); }
+         if(pressed) {
+            kL.application.toggleMixer();
+         }
          sendTextToKeyLab("Mixer", "");
          break;
       case 5:
@@ -286,7 +288,8 @@ MULTI_MODE.onButtonPress = function(index, pressed) {
             if(pressed) {
                kL.application.toggleInspector();
             }
-         } catch(e) {
+         }
+         catch(e) {
             println("Placeholder: toggle Inspector in 1.1")
          }
          sendTextToKeyLab("Toggle Inspector", "");
@@ -301,36 +304,36 @@ MULTI_MODE.onButtonPress = function(index, pressed) {
          if(pressed) {
             kL.application.toggleBrowserVisibility();
             sendTextToKeyLab("Toggle Browser ", "");
-            }
+         }
          break;
       case 8:
-         if (DRUMPADS) {
+         if(DRUMPADS) {
             if(kL.padOffset > -3 && pressed) {
                kL.padOffset -= 1;
-               if (kL.padOffset >= 0) {
+               if(kL.padOffset >= 0) {
                   var prefix = " +";
                }
                else {
                   var prefix = " "
                }
                setNoteTable(kL.midiInPads, kL.padTranslation, kL.padOffset * 16);
-               host.showPopupNotification("Drum Pad Bank:" + prefix + kL.padOffset );
+               host.showPopupNotification("Drum Pad Bank:" + prefix + kL.padOffset);
                sendTextToKeyLab("Drum Pad Bank:", prefix + kL.padOffset)
             }
          }
          break;
       case 9:
-         if (DRUMPADS) {
+         if(DRUMPADS) {
             if(kL.padOffset < 4 && pressed) {
                kL.padOffset += 1;
-               if (kL.padOffset >= 0) {
+               if(kL.padOffset >= 0) {
                   var prefix = " +";
                }
                else {
                   var prefix = " "
                }
                setNoteTable(kL.midiInPads, kL.padTranslation, kL.padOffset * 16);
-               host.showPopupNotification("Drum Pad Bank:" + prefix + kL.padOffset );
+               host.showPopupNotification("Drum Pad Bank:" + prefix + kL.padOffset);
                sendTextToKeyLab("Drum Pad Bank:", prefix + kL.padOffset)
             }
          }

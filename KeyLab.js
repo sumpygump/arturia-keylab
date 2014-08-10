@@ -1,7 +1,6 @@
-load ("Extensions.js");
-load ("KeyLabInit.js");
-load ("Modes.js");
-//load ("testing.js");
+load("Extensions.js");
+load("KeyLabInit.js");
+load("Modes.js");
 
 var kL = null;
 var MODE = null;
@@ -15,7 +14,7 @@ function KeyLab() {
    this.midiInKeys.setShouldConsumeEvents(false);
 
    // Check if Drumpads are available for the model, if yes, create an Input for them:
-   if (DRUMPADS) {
+   if(DRUMPADS) {
       this.midiInPads = host.getMidiInPort(0).createNoteInput(CNAME + ": Pads", "?9????");
       this.midiInPads.setShouldConsumeEvents(false);
       // Translate Poly AT to Timbre:
@@ -130,7 +129,7 @@ function KeyLab() {
    this.parameterName = [];
    this.parameterValue = [];
    // Initialisations:
-   for (var i = 0; i < 8; i++) {
+   for(var i = 0; i < 8; i++) {
       this.trackVolume[i] = 0;
       this.deviceMacro[i] = 0;
       this.deviceMapping[i] = 0;
@@ -146,8 +145,8 @@ function KeyLab() {
    }
    this.envelopeName[8] = "";
    this.envelopeValue[8] = "";
-      this.buttonToggle[8] = false;
-      this.buttonToggle[9] = false;
+   this.buttonToggle[8] = false;
+   this.buttonToggle[9] = false;
 
    // Pad Translation Table:
    this.padTranslation = initArray(0, 128);
@@ -170,22 +169,21 @@ function KeyLab() {
    this.uMap = host.createUserControls(8);
    this.uControls = host.createUserControlsSection(this.highestCC - this.lowestCC + 1);
 
-   for(var h = this.lowestCC; h <= this.highestCC; h++)
-   {
+   for(var h = this.lowestCC; h <= this.highestCC; h++) {
       this.uControls.getControl(h - this.lowestCC).setLabel("CC" + h);
    }
 
    // Observers:
    this.masterTrack.getVolume().addValueDisplayObserver(16, "None", function(volume) {
       this.masterVolume = volume;
-      if (this.masterVolumeHasChanged) {
+      if(this.masterVolumeHasChanged) {
          displayQueue.push(["Master Volume:", volume]);
          this.masterVolumeHasChanged = false;
       }
    });
    this.cDevice.addPageNamesObserver(function(names) {
       this.pageNames = [];
-      for(var j=0; j<arguments.length; j++) {
+      for(var j = 0; j < arguments.length; j++) {
          this.pageNames[j] = arguments[j];
       }
    });
@@ -195,28 +193,28 @@ function KeyLab() {
    });
    this.cDevice.addNameObserver(16, "None", function(name) {
       this.currentDevice = name;
-      if (this.deviceHasChanged) {
+      if(this.deviceHasChanged) {
          sendTextToKeyLab("Current Device:", name);
          this.deviceHasChanged = false;
       }
    });
    this.cDevice.addPresetNameObserver(16, "None", function(name) {
       this.currentPreset = name;
-      if (this.presetHasChanged) {
+      if(this.presetHasChanged) {
          sendTextToKeyLab("Current Preset:", name);
          this.presetHasChanged = false;
       }
    });
    this.cDevice.addPresetCategoryObserver(16, "None", function(name) {
       this.currentCategory = name;
-      if (this.presetCategoryHasChanged) {
+      if(this.presetCategoryHasChanged) {
          sendTextToKeyLab("Preset Category:", name);
          this.presetCategoryHasChanged = false;
       }
    });
    this.cDevice.addPresetCreatorObserver(16, "None", function(name) {
       this.currentCreator = name;
-      if (this.presetCreatorHasChanged) {
+      if(this.presetCreatorHasChanged) {
          sendTextToKeyLab("Preset Creator:", name);
          this.presetCreatorHasChanged = false;
       }
@@ -224,9 +222,9 @@ function KeyLab() {
 
    this.transport.addIsLoopActiveObserver(function(on) {
       var lop = on ? "01" : "00";
-      if (this.loopHasChanged) {
+      if(this.loopHasChanged) {
          this.loopHasChanged = false;
-         if (on) {
+         if(on) {
             sendTextToKeyLab("Transport:", "Loop Enabled");
             sendSysex("F0 00 20 6B 7F 42 02 00 10 5D 01 F7");
          }
@@ -243,8 +241,8 @@ function KeyLab() {
       var play = on ? "01" : "00";
       var stp = on ? "00" : "01";
       this.isPlaying = on;
-      if (this.playHasChanged) {
-         if (on) {
+      if(this.playHasChanged) {
+         if(on) {
             sendTextToKeyLab("Transport:", "Play");
             sendSysex("F0 00 20 6B 7F 42 02 00 10 5B " + play + " F7");
          }
@@ -261,8 +259,8 @@ function KeyLab() {
    });
    this.transport.addIsRecordingObserver(function(on) {
       var rec = on ? "01" : "00";
-      if (this.recordHasChanged) {
-         if (on) {
+      if(this.recordHasChanged) {
+         if(on) {
             sendTextToKeyLab("Transport:", "Record Enabled");
             sendSysex("F0 00 20 6B 7F 42 02 00 10 5C " + rec + " F7");
          }
@@ -278,28 +276,28 @@ function KeyLab() {
    });
    this.transport.getPosition().addTimeObserver(":", 4, 1, 1, 2, function(time) {
       this.currentTime = time;
-      if (!this.isPlaying && this.positionHasChanged) {
+      if(!this.isPlaying && this.positionHasChanged) {
          sendTextToKeyLab("Current Time:", time);
          this.positionHasChanged = false;
       }
    });
    this.transport.getInPosition().addTimeObserver(":", 4, 1, 1, 2, function(time) {
       this.currentInPosition = time;
-      if (!this.isPlaying && this.punchInHasChanged) {
+      if(!this.isPlaying && this.punchInHasChanged) {
          sendTextToKeyLab("Punch-In Time:", time);
          this.punchInHasChanged = false;
       }
    });
    this.transport.getOutPosition().addTimeObserver(":", 4, 1, 1, 2, function(time) {
       this.currentOutPosition = time;
-      if (!this.isPlaying && this.punchOutHasChanged) {
+      if(!this.isPlaying && this.punchOutHasChanged) {
          sendTextToKeyLab("Punch-Out Time:", time);
          this.punchOutHasChanged = false;
       }
    });
    this.transport.getTempo().addValueDisplayObserver(16, "None", function(value) {
       this.currentSpeed = value;
-      if (this.speedHasChanged) {
+      if(this.speedHasChanged) {
          //sendTextToKeyLab("Song Tempo:", value);
          kL.displayQueue.push(["SongTempo:", value]);
          this.speedHasChanged = false;
@@ -307,14 +305,14 @@ function KeyLab() {
    })
    this.cTrack.addNameObserver(16, "None", function(name) {
       this.currentTrack = name;
-      if (this.trackHasChanged) {
+      if(this.trackHasChanged) {
          sendTextToKeyLab("Current Track:", name);
          this.trackHasChanged = false;
       }
    });
    this.cTrack.getVolume().addValueDisplayObserver(16, "None", function(value) {
       this.currentVolume = value;
-      if (this.trackVolumeHasChanged) {
+      if(this.trackVolumeHasChanged) {
          sendTextToKeyLab("Track Volume:", kL.currentVolume);
       }
    })
@@ -340,9 +338,8 @@ function KeyLab() {
       this.currentSend3Val = value;
    });
 
-
    // Parameter Name Observers:
-   for (var j = 0; j < 8; j++) {
+   for(var j = 0; j < 8; j++) {
       // Macro Name:
       this.cDevice.getMacro(j).addLabelObserver(16, "None", getValueObserverFunc(j, this.macroName));
       // Macro Value:
@@ -366,9 +363,9 @@ function KeyLab() {
    // Envelope Parameter Value:
    this.cDevice.getEnvelopeParameter(j).addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.envelopeValue));
 
-   this.cTrack.addNoteObserver(function(on, key, vel){
+   this.cTrack.addNoteObserver(function(on, key, vel) {
       var low = this.lowestPad + (16 * this.padOffset);
-      if (key >= low && key < (low + 16)) {
+      if(key >= low && key < (low + 16)) {
          on ? sendMidi(153, key, 127) : sendMidi(137, key, 0);
       }
    })
@@ -397,71 +394,70 @@ function onMidi(status, data1, data2) {
    //printMidi(midi.status, midi.data1, midi.data2);
 
    // Switch over receivced data type:
-   switch (midi.type()) {
+   switch(midi.type()) {
       // handle all CCs:
       case "CC":
          var increment = midi.data2 - 64;
-         switch (midi.data1)
-         {
+         switch(midi.data1) {
             // Transport - Loop:
             case kL.loopToggle:
                kL.loopHasChanged = true;
                kL.transport.toggleLoop();
                break;
-            // Bank 1
+               // Bank 1
             case kL.bank1:
                kL.bankToggle = false;
                setPage();
                sendTextToKeyLab(MODE.label1, MODE.label2);
                break;
-            // Bank 2
+               // Bank 2
             case kL.bank2:
                kL.bankToggle = true;
                setPage();
                sendTextToKeyLab(MODE.label1, MODE.label2);
                break;
-            // Sound Mode
+               // Sound Mode
             case kL.sound:
                kL.soundMulti = false;
                setPage();
                MODE.onSoundMultiPressed(true);
                sendTextToKeyLab(MODE.label1, MODE.label2);
                break;
-            // Multi Mode
+               // Multi Mode
             case kL.multi:
                kL.soundMulti = true;
                setPage();
                MODE.onSoundMultiPressed(false);
                sendTextToKeyLab(MODE.label1, MODE.label2);
                break;
-            // Preset/Category Up/Down:
+               // Preset/Category Up/Down:
             case kL.paramClick:
                kL.paramIsClicked = (midi.isOn());
                MODE.onParamCategoryClick(kL.paramIsClicked);
                break;
-            // Value Knob Held Down:
+               // Value Knob Held Down:
             case kL.valueClick:
                kL.valueIsClicked = (midi.isOn());
                MODE.onValuePresetClick(kL.valueIsClicked);
                break;
-            // Param Knob
+               // Param Knob
             case kL.param:
-               if (increment != 0) {
+               if(increment != 0) {
                   MODE.onParamCategory(increment);
                }
                break;
-            // Value Knob
+               // Value Knob
             case kL.value:
-               if (increment != 0) {
+               if(increment != 0) {
                   MODE.onValuePreset(increment);
                }
                break;
-            // Volume Knob:
+               // Volume Knob:
             case kL.volume:
                MODE.onVolumeEncoder(increment);
                break;
 
-            // Knobs:
+               // Knobs:
             case kL.knobBank1[0]:
             case kL.knobBank2[0]:
                MODE.onEncoder(0, increment);
@@ -503,7 +499,7 @@ function onMidi(status, data1, data2) {
                MODE.onEncoder(9, increment);
                break;
 
-            // Faders:
+               // Faders:
             case kL.faderBank1[0]:
             case kL.faderBank2[0]:
                MODE.onFader(0, midi.data2);
@@ -541,7 +537,7 @@ function onMidi(status, data1, data2) {
                MODE.onFader(8, midi.data2);
                break;
 
-            // Buttons:
+               // Buttons:
             case kL.buttonBank[0]:
                MODE.onButtonPress(0, midi.isOn());
                break;
@@ -574,27 +570,27 @@ function onMidi(status, data1, data2) {
                break;
          }
          break;
-      //case "NoteOn":
-      //	 break;
-      //case "NoteOff":
-      //	 break;
-      //case "KeyPressure":
-      //	 break;
-      //case "ProgramChange":
-      //	 break;
-      //case "ChannelPressure":
-      //	 break;
-      //case "PitchBend":
-      //	 break;
-      //case "Other":
-      //	 break
+         //case "NoteOn":
+         //	 break;
+         //case "NoteOff":
+         //	 break;
+         //case "KeyPressure":
+         //	 break;
+         //case "ProgramChange":
+         //	 break;
+         //case "ChannelPressure":
+         //	 break;
+         //case "PitchBend":
+         //	 break;
+         //case "Other":
+         //	 break
    }
 }
 
-function onSysex(data){
+function onSysex(data) {
    //printSysex(data);
    // MMC Transport Controls:
-   switch (data){
+   switch(data) {
       case "f07f7f0605f7":
          kL.transport.rewind();
          sendTextToKeyLab("Transport:", "Rewind");
@@ -629,14 +625,13 @@ function flush() {
 }
 
 // Set the current page:
-function setPage()
-{
+function setPage() {
    var previousMode = MODE;
-   if (kL.bankToggle) {
+   if(kL.bankToggle) {
       MODE = ARTURIA_MODE;
    }
    else {
-      if (kL.soundMulti) {
+      if(kL.soundMulti) {
          MODE = MULTI_MODE;
       }
       else {
@@ -644,9 +639,8 @@ function setPage()
       }
    }
 
-   if (previousMode != MODE) {
-      switch (MODE)
-      {
+   if(previousMode != MODE) {
+      switch(MODE) {
          case SOUND_MODE:
             setDeviceIndication(true);
             setTrackIndication(false);
@@ -667,7 +661,7 @@ function setPage()
             break;
       }
 
-      if (previousMode != null) {
+      if(previousMode != null) {
          host.showPopupNotification(MODE.label1 + MODE.label2);
       }
    }
@@ -675,10 +669,10 @@ function setPage()
 
 // Set Device Value based on current page:
 function setDeviceValue(index, page, increment) {
-   switch (page) {
+   switch(page) {
       case 0:
          kL.cDevice.getMacro(index).getAmount().inc(increment, 128);
-         if (kL.macroName[index]) {
+         if(kL.macroName[index]) {
             sendTextToKeyLab(kL.macroName[index] + ":", kL.macroValue[index]);
          }
          else {
@@ -687,7 +681,7 @@ function setDeviceValue(index, page, increment) {
          break;
       case 1:
          kL.cDevice.getCommonParameter(index).inc(increment, 128);
-         if (kL.commonName[index] === "None") {
+         if(kL.commonName[index] === "None") {
             sendTextToKeyLab("Unassigned", "");
          }
          else {
@@ -696,7 +690,7 @@ function setDeviceValue(index, page, increment) {
          break;
       default:
          kL.cDevice.getParameter(index).inc(increment, 128);
-         if (kL.pageNames[kL.pageSelect-2] && kL.commonName[index] !== "None") {
+         if(kL.pageNames[kL.pageSelect - 2] && kL.commonName[index] !== "None") {
             sendTextToKeyLab(kL.parameterName[index] + ":", kL.parameterValue[index]);
          }
          else {
@@ -708,21 +702,22 @@ function setDeviceValue(index, page, increment) {
 
 // Set up the Buttons for Parameter Page Selection:
 function setParameterButtons(isOn, index) {
-   if(isOn){
+   if(isOn) {
       //println(index);
       kL.pageSelect = index;
       try {
          kL.pPageHasChanged = true;
          kL.cDevice.setParameterPage(index - 2);
-      } catch(e) {}
+      }
+      catch(e) {}
       setDeviceIndication(true);
    }
-   else{
+   else {
       setButtonLight(index);
       kL.pPageHasChanged = true;
-      if (kL.pageNames[kL.pageSelect-2]) {
-         host.showPopupNotification("Parameter Page: " + kL.pageNames[kL.pageSelect-2]);
-         sendTextToKeyLab("Parameter Page:", kL.pageNames[kL.pageSelect-2])
+      if(kL.pageNames[kL.pageSelect - 2]) {
+         host.showPopupNotification("Parameter Page: " + kL.pageNames[kL.pageSelect - 2]);
+         sendTextToKeyLab("Parameter Page:", kL.pageNames[kL.pageSelect - 2])
       }
       else {
          host.showPopupNotification("Parameter Page: Unassigned");
@@ -733,35 +728,35 @@ function setParameterButtons(isOn, index) {
 
 // Set the Colour Indication on Devices:
 function setDeviceIndication(enabled) {
-   if (enabled) {
+   if(enabled) {
       switch(kL.pageSelect) {
-      case 0:
-         var macro = true;
-         var common = false;
-//         var envelope = true;
-         var user = false;
-         break;
-      case 1:
-         var macro = false;
-         var common = true;
-//         var envelope = true;
-         var user = false;
-         break;
-      default:
-         var macro = false;
-         var common = false;
-//         var envelope = true;
-         var user = true;
-         break;
+         case 0:
+            var macro = true;
+            var common = false;
+            //         var envelope = true;
+            var user = false;
+            break;
+         case 1:
+            var macro = false;
+            var common = true;
+            //         var envelope = true;
+            var user = false;
+            break;
+         default:
+            var macro = false;
+            var common = false;
+            //         var envelope = true;
+            var user = true;
+            break;
       }
    }
    else {
       var macro = false;
       var common = false;
-//      var envelope = false;
+      //      var envelope = false;
       var user = false;
    }
-   for (var i = 0; i < 8; i++) {
+   for(var i = 0; i < 8; i++) {
       kL.cDevice.getMacro(i).getAmount().setIndication(macro);
       //kL.cDevice.getEnvelopeParameter(i).setIndication(envelope);
       kL.cDevice.getCommonParameter(i).setIndication(common);
@@ -772,7 +767,7 @@ function setDeviceIndication(enabled) {
 
 // Set the Colour Indication on Tracks, Pan and Sends
 function setTrackIndication(enabled) {
-   for (var i = 0; i < 8; i++){
+   for(var i = 0; i < 8; i++) {
       kL.tracks.getTrack(i).getVolume().setIndication(enabled);
    }
    kL.cTrack.getVolume().setIndication(enabled);
@@ -803,7 +798,6 @@ function sendDelayedSysex(SysEx) {
    sendSysex(SysEx);
 }
 
-
 // Exit Function
 function exit() {
    // Reset Working Memory to a default state:
@@ -811,10 +805,8 @@ function exit() {
 }
 
 // A function to create an indexed function for the Observers
-function getValueObserverFunc(index, varToStore)
-{
-   return function(value)
-   {
+function getValueObserverFunc(index, varToStore) {
+   return function(value) {
       varToStore[index] = value;
    }
 }
