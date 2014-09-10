@@ -13,6 +13,8 @@ host.defineSysexIdentityReply("F0 7E 00 06 02 00 20 6B 02 00 04 0? ?? ?? ?? ?? F
 var Knobs1 = [7, 74, 71, 76, 77, 93, 73, 75];
 var Knobs2 = [114, 18, 19, 16, 17, 91, 79, 72];
 var Pad1 = [22, 23, 24, 25, 26, 27, 28, 29];
+var OctaveDown = 20;
+var OctaveUp = 21;
 var Mode = "Track";
 var SubMode = "VolPan";
 var tName = "None";
@@ -172,6 +174,7 @@ function onMidi(status, data1, data2) {
                   }
                   break;
                case "Arturia":
+                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
                   break;
             }
             break;
@@ -198,6 +201,9 @@ function onMidi(status, data1, data2) {
                      cDevice.nextParameterPage();
                   }
                   break;
+               case "Arturia":
+                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
+                  break;
             }
             break;
          case Pad1[6]:
@@ -220,14 +226,7 @@ function onMidi(status, data1, data2) {
                   }
                   break;
                case "Arturia":
-                  if (midi.isOn()) {
-                     if (padShift > -24) {
-                        padShift -= 8;
-                        var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
-                        host.showPopupNotification("Drum Bank Shift: " + padOffset);
-                        setNoteTable(MiniLabPads, padTranslation, padShift);
-                     }
-                  }
+                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
                   break;
             }
             break;
@@ -251,15 +250,28 @@ function onMidi(status, data1, data2) {
                   }
                   break;
                case "Arturia":
-                  if (midi.isOn()) {
-                     if (padShift < 50) {
-                        padShift += 8;
-                        var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
-                        host.showPopupNotification("Drum Bank Shift: " + padOffset);
-                        setNoteTable(MiniLabPads, padTranslation, padShift);
-                     }
-                  }
+                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
                   break;
+            }
+            break;
+         case OctaveDown:
+            if (midi.isOn()) {
+               if (padShift > -24) {
+                  padShift -= 8;
+                  var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
+                  host.showPopupNotification("Drum Bank Shift: " + padOffset);
+                  setNoteTable(MiniLabPads, padTranslation, padShift);
+               }
+            }
+            break;
+         case OctaveUp:
+            if (midi.isOn()) {
+               if (padShift < 50) {
+                  padShift += 8;
+                  var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
+                  host.showPopupNotification("Drum Bank Shift: " + padOffset);
+                  setNoteTable(MiniLabPads, padTranslation, padShift);
+               }
             }
             break;
          default:
