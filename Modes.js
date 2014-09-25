@@ -161,14 +161,18 @@ SOUND_MODE.onButtonPress = function(index, pressed) {
       // Macros:
       pressed ? kL.pageSelect = 0 : setButtonLight(0);
       setDeviceIndication(true);
-      host.showPopupNotification("Active Controls: Device Macros");
+      if (kL.userNotifications) {
+         host.showPopupNotification("Active Controls: Device Macros");
+      }
       sendTextToKeyLab("Active Controls:", "Device Macros")
    }
    else if(index === 1) {
       // Common:
       pressed ? kL.pageSelect = 1 : setButtonLight(1);
       setDeviceIndication(true);
-      host.showPopupNotification("Parameter Page: Common");
+      if (kL.userNotifications) {
+         host.showPopupNotification("Parameter Page: Common");
+      }
       sendTextToKeyLab("Parameter Page:", "Common")
    }
    else {

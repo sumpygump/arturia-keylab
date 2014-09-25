@@ -173,6 +173,7 @@ function KeyLab() {
 
    notifications.getUserNotificationsEnabled().addValueObserver(function(on) {
       this.userNotifications = on;
+      //println(on);
    });
 
    this.notifications.setShouldShowValueNotifications(true);
@@ -293,7 +294,9 @@ function KeyLab() {
       this.currentTime = time;
       if(!this.isPlaying && this.positionHasChanged) {
          sendTextToKeyLab("Current Time:", time);
-         host.showPopupNotification("Current Time: " + time);
+         if (this.userNotifications) {
+            host.showPopupNotification("Current Time: " + time);
+         }
          this.positionHasChanged = false;
       }
    });
@@ -301,7 +304,9 @@ function KeyLab() {
       this.currentInPosition = time;
       if(!this.isPlaying && this.punchInHasChanged) {
          sendTextToKeyLab("Loop Start:", time);
-         host.showPopupNotification("Loop Start: " + time);
+         if (this.userNotifications) {
+            host.showPopupNotification("Loop Start: " + time);
+         }
          this.punchInHasChanged = false;
       }
    });
@@ -309,7 +314,9 @@ function KeyLab() {
       this.currentOutPosition = time;
       if(!this.isPlaying && this.punchOutHasChanged) {
          sendTextToKeyLab("Loop End:", time);
-         host.showPopupNotification("Loop End: " + time);
+         if (this.userNotifications) {
+            host.showPopupNotification("Loop End: " + time);
+         }
          this.punchOutHasChanged = false;
       }
    });
@@ -737,11 +744,15 @@ function setParameterButtons(isOn, index) {
       setButtonLight(index);
       kL.pPageHasChanged = true;
       if(kL.pageNames[kL.pageSelect - 2]) {
-         host.showPopupNotification("Parameter Page: " + kL.pageNames[kL.pageSelect - 2]);
+         if (kL.userNotifications) {
+            host.showPopupNotification("Parameter Page: " + kL.pageNames[kL.pageSelect - 2]);
+         }
          sendTextToKeyLab("Parameter Page:", kL.pageNames[kL.pageSelect - 2])
       }
       else {
-         host.showPopupNotification("Parameter Page: Unassigned");
+         if (kL.userNotifications) {
+            host.showPopupNotification("Parameter Page: Unassigned");
+         }
          sendTextToKeyLab("Parameter Page:", "Unassigned")
       }
    }
