@@ -7,14 +7,13 @@ load ("Extensions.js");
 host.defineController("Arturia", "MiniLab", "1.0", "e48ffd90-3203-11e4-8c21-0800200c9a66");
 host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["Arturia MINILAB"], ["Arturia MINILAB"]);
+host.addDeviceNameBasedDiscoveryPair(["Arturia MINILAB MIDI 1"], ["Arturia MINILAB MIDI 1"]);
 host.defineSysexIdentityReply("F0 7E 00 06 02 00 20 6B 02 00 04 0? ?? ?? ?? ?? F7");
 
 
 var Knobs1 = [7, 74, 71, 76, 77, 93, 73, 75];
 var Knobs2 = [114, 18, 19, 16, 17, 91, 79, 72];
 var Pad1 = [22, 23, 24, 25, 26, 27, 28, 29];
-var OctaveDown = 20;
-var OctaveUp = 21;
 var Mode = "Track";
 var SubMode = "VolPan";
 var tName = "None";
@@ -64,7 +63,7 @@ function init()
    cTrack.addNameObserver(50, "None", function(name){
       tName = name;
       if (tNameHasChanged) {
-         host.showPopupNotification("Track: " + name);
+         //host.showPopupNotification("Track: " + name);
          tNameHasChanged = false;
       }
    });
@@ -72,7 +71,7 @@ function init()
    cDevice.addNameObserver(50, "None", function(name){
       dName = name;
       if (dNameHasChanged) {
-         host.showPopupNotification("Device: " + name);
+         //host.showPopupNotification("Device: " + name);
          dNameHasChanged = false;
       }
    });
@@ -80,7 +79,7 @@ function init()
    cDevice.addPresetNameObserver(50, "None", function(name){
       pName = name;
       if (presetHasChanged) {
-         host.showPopupNotification("Preset: " + name);
+         //host.showPopupNotification("Preset: " + name);
          presetHasChanged = false;
       }
    });
@@ -95,14 +94,29 @@ function init()
    cDevice.addSelectedPageObserver(-1, function(val) {
       pageNumber = val;
       if (pageHasChanged) {
-         host.showPopupNotification("Parameter Page " + (val+1) + ": " + pageNames[val]);
+         //host.showPopupNotification("Parameter Page " + (val+1) + ": " + pageNames[val]);
          pageHasChanged = false;
       }
    });
 
+   try {
+      host.getNotificationSettings().setShouldShowSelectionNotifications (true);
+      host.getNotificationSettings().setShouldShowChannelSelectionNotifications (true);
+      host.getNotificationSettings().setShouldShowTrackSelectionNotifications (true);
+      host.getNotificationSettings().setShouldShowDeviceSelectionNotifications (true);
+      host.getNotificationSettings().setShouldShowDeviceLayerSelectionNotifications (true);
+      host.getNotificationSettings().setShouldShowPresetNotifications (true);
+      host.getNotificationSettings().setShouldShowMappingNotifications (true);
+      host.getNotificationSettings().setShouldShowValueNotifications (true);
+   } catch(e) {
+   }
+
+   host.scheduleTask(pollState, null, 500);
 }
 
-
+function pollState() {
+   sendSysex("F0 00 20 6B 7F 42 01 00 00 2F F7");
+}
 
 
 function onMidi(status, data1, data2) {
@@ -174,7 +188,6 @@ function onMidi(status, data1, data2) {
                   }
                   break;
                case "Arturia":
-                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
                   break;
             }
             break;
@@ -201,9 +214,6 @@ function onMidi(status, data1, data2) {
                      cDevice.nextParameterPage();
                   }
                   break;
-               case "Arturia":
-                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
-                  break;
             }
             break;
          case Pad1[6]:
@@ -226,7 +236,14 @@ function onMidi(status, data1, data2) {
                   }
                   break;
                case "Arturia":
-                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
+                  if (midi.isOn()) {
+                     if (padShift > -24) {
+                        padShift -= 8;
+                        var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
+                        host.showPopupNotification("Drum Bank Shift: " + padOffset);
+                        setNoteTable(MiniLabPads, padTranslation, padShift);
+                     }
+                  }
                   break;
             }
             break;
@@ -250,28 +267,15 @@ function onMidi(status, data1, data2) {
                   }
                   break;
                case "Arturia":
-                     MiniLabKeys.sendRawMidiEvent(midi.status, midi.data1, midi.data2);
+                  if (midi.isOn()) {
+                     if (padShift < 50) {
+                        padShift += 8;
+                        var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
+                        host.showPopupNotification("Drum Bank Shift: " + padOffset);
+                        setNoteTable(MiniLabPads, padTranslation, padShift);
+                     }
+                  }
                   break;
-            }
-            break;
-         case OctaveDown:
-            if (midi.isOn()) {
-               if (padShift > -24) {
-                  padShift -= 8;
-                  var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
-                  host.showPopupNotification("Drum Bank Shift: " + padOffset);
-                  setNoteTable(MiniLabPads, padTranslation, padShift);
-               }
-            }
-            break;
-         case OctaveUp:
-            if (midi.isOn()) {
-               if (padShift < 50) {
-                  padShift += 8;
-                  var padOffset = (padShift > 0 ? "+" : "") + padShift/8;
-                  host.showPopupNotification("Drum Bank Shift: " + padOffset);
-                  setNoteTable(MiniLabPads, padTranslation, padShift);
-               }
             }
             break;
          default:
@@ -349,38 +353,41 @@ function setIndications() {
    var device = false;
    var preset = false;
    var arturia = false;
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 78 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 79 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 7A 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 7B 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 7C 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 7D 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 7E 00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 10 7F 00 F7");
+
+   // Pad Light feedback disabled because of we have no way of knowing what mode the MiniLab is in.
+
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 78 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 79 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 7A 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 7B 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 7C 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 7D 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 7E 00 F7");
+   //sendSysex("F0 00 20 6B 7F 42 02 00 10 7F 00 F7");
    switch (Mode) {
       case "Track":
          if (SubMode === "VolPan") {
             track = true;
-            sendSysex("F0 00 20 6B 7F 42 02 00 10 78 01 F7");
-            sendSysex("F0 00 20 6B 7F 42 02 00 10 7C 01 F7");
+            //sendSysex("F0 00 20 6B 7F 42 02 00 10 78 01 F7");
+            //sendSysex("F0 00 20 6B 7F 42 02 00 10 7C 01 F7");
          }
          else {
             send = true;
-            sendSysex("F0 00 20 6B 7F 42 02 00 10 78 01 F7");
-            sendSysex("F0 00 20 6B 7F 42 02 00 10 7D 01 F7");
+            //sendSysex("F0 00 20 6B 7F 42 02 00 10 78 01 F7");
+            //sendSysex("F0 00 20 6B 7F 42 02 00 10 7D 01 F7");
          }
          break;
       case "Device":
          device = true;
-         sendSysex("F0 00 20 6B 7F 42 02 00 10 79 01 F7");
+         //sendSysex("F0 00 20 6B 7F 42 02 00 10 79 01 F7");
          break;
       case "Preset":
          preset = true;
-         sendSysex("F0 00 20 6B 7F 42 02 00 10 7A 01 F7");
+         //sendSysex("F0 00 20 6B 7F 42 02 00 10 7A 01 F7");
          break;
       case "Arturia":
          arturia = true;
-         sendSysex("F0 00 20 6B 7F 42 02 00 10 7B 01 F7");
+         //sendSysex("F0 00 20 6B 7F 42 02 00 10 7B 01 F7");
          break;
    }
    for (var i = 0; i < 8; i++) {
