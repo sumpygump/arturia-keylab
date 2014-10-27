@@ -16,7 +16,7 @@ MidiData.prototype = {
 
    // Booleans for message type:
    isNoteOff: function() {
-      return((this.status & 0xF0) === 0x80) || ((this & 0xF0) === 0x90 && this.data2 === 0);
+      return((this.status & 0xF0) === 0x80) || ((this.status & 0xF0) === 0x90 && this.data2 === 0);
    },
    isNoteOn: function() {
       return(this.status & 0xF0) === 0x90;
@@ -105,15 +105,15 @@ MidiData.prototype = {
 
    // Ranges:
    data1IsInRange: function(low, high) {
-      return(data1 >= low && data1 <= high);
+      return(this.data1 >= low && this.data1 <= high);
    },
    data2IsInRange: function(low, high) {
-      return(data2 >= low && data2 <= high);
+      return(this.data2 >= low && this.data2 <= high);
    },
 
    // Notes:
    note: function() {
-      return this.isNoteOn() ? noteNames[this.data1 % 12] : false;
+      return this.isNoteOn() ? this.noteNames[this.data1 % 12] : false;
    },
    octave: function() {
       return this.isNoteOn() ? Math.floor((this.data1 / 12) - 2) : false;
