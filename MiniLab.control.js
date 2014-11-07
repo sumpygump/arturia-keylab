@@ -126,7 +126,7 @@ function onMidi(status, data1, data2) {
    //printMidi(midi.status, midi.data1, midi.data2);
    //println(midi.channel());
 
-   if (midi.isChannelController) {
+   if (midi.isChannelController()) {
       switch (midi.data1) {
          case Pad1[0]:
             if (midi.isOn()) {
