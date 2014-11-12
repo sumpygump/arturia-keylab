@@ -8,14 +8,14 @@ var MODE = null;
 // Main KeyLab Object:
 function KeyLab() {
    // Midi Ports:
-   //this.midiInKeys = host.getMidiInPort(0).createNoteInput(CNAME + ": Keys", "?0????");
-   this.midiInKeys = host.getMidiInPort(0).createNoteInput(CNAME + ": Keys", "80????", "90????", "B001??", "B002??", "B007??", "B00B??", "B040??", "C0????", "D0????", "E0????");
+   //this.midiInKeys = host.getMidiInPort(0).createNoteInput("Keys", "?0????");
+   this.midiInKeys = host.getMidiInPort(0).createNoteInput("Keys", "80????", "90????", "B001??", "B002??", "B007??", "B00B??", "B040??", "C0????", "D0????", "E0????");
    // Disable the consuming of events by the NoteInputs, so they are also sent to onMidi:
    this.midiInKeys.setShouldConsumeEvents(false);
 
    // Check if Drumpads are available for the model, if yes, create an Input for them:
    if(DRUMPADS) {
-      this.midiInPads = host.getMidiInPort(0).createNoteInput(CNAME + ": Pads", "?9????");
+      this.midiInPads = host.getMidiInPort(0).createNoteInput("Pads", "?9????");
       this.midiInPads.setShouldConsumeEvents(false);
       // Translate Poly AT to Timbre:
       this.midiInPads.assignPolyphonicAftertouchToExpression(9, NoteExpression.TIMBRE_UP, 2);
@@ -97,6 +97,8 @@ function KeyLab() {
    this.send3HasChanged = false;
    this.speedHasChanged = false;
 
+   this.userNotifications = true;
+
    this.trackAccumulator = 0;
    this.trackBankAccumulator = 0;
    this.deviceAccumulator = 0;
@@ -159,15 +161,29 @@ function KeyLab() {
    this.displayQueue = [];
 
    // Creating Main Views:
+   this.notifications = host.getNotificationSettings();
    this.application = host.createApplication();
    this.transport = host.createTransport();
    this.masterTrack = host.createMasterTrack(0);
    this.tracks = host.createMainTrackBank(8, 0, 0);
    this.cTrack = host.createCursorTrack(3, 0);
-   //this.cDevice = host.createCursorDevice();
    this.cDevice = this.cTrack.getPrimaryDevice();
    this.uMap = host.createUserControls(8);
    this.uControls = host.createUserControlsSection(this.highestCC - this.lowestCC + 1);
+
+   notifications.getUserNotificationsEnabled().addValueObserver(function(on) {
+      this.userNotifications = on;
+      //println(on);
+   });
+
+   this.notifications.setShouldShowValueNotifications(true);
+   this.notifications.setShouldShowTrackSelectionNotifications(true);
+   this.notifications.setShouldShowSelectionNotifications(true);
+   this.notifications.setShouldShowPresetNotifications(true);
+   this.notifications.setShouldShowMappingNotifications(true);
+   this.notifications.setShouldShowDeviceSelectionNotifications(true);
+   this.notifications.setShouldShowDeviceLayerSelectionNotifications(true);
+   this.notifications.setShouldShowChannelSelectionNotifications(true);
 
    for(var h = this.lowestCC; h <= this.highestCC; h++) {
       this.uControls.getControl(h - this.lowestCC).setLabel("CC" + h);
@@ -278,20 +294,29 @@ function KeyLab() {
       this.currentTime = time;
       if(!this.isPlaying && this.positionHasChanged) {
          sendTextToKeyLab("Current Time:", time);
+         if (this.userNotifications) {
+            host.showPopupNotification("Current Time: " + time);
+         }
          this.positionHasChanged = false;
       }
    });
    this.transport.getInPosition().addTimeObserver(":", 4, 1, 1, 2, function(time) {
       this.currentInPosition = time;
       if(!this.isPlaying && this.punchInHasChanged) {
-         sendTextToKeyLab("Punch-In Time:", time);
+         sendTextToKeyLab("Loop Start:", time);
+         if (this.userNotifications) {
+            host.showPopupNotification("Loop Start: " + time);
+         }
          this.punchInHasChanged = false;
       }
    });
    this.transport.getOutPosition().addTimeObserver(":", 4, 1, 1, 2, function(time) {
       this.currentOutPosition = time;
       if(!this.isPlaying && this.punchOutHasChanged) {
-         sendTextToKeyLab("Punch-Out Time:", time);
+         sendTextToKeyLab("Loop End:", time);
+         if (this.userNotifications) {
+            host.showPopupNotification("Loop End: " + time);
+         }
          this.punchOutHasChanged = false;
       }
    });
@@ -299,7 +324,8 @@ function KeyLab() {
       this.currentSpeed = value;
       if(this.speedHasChanged) {
          //sendTextToKeyLab("Song Tempo:", value);
-         kL.displayQueue.push(["SongTempo:", value]);
+         kL.displayQueue.push(["Song Tempo:", value]);
+         //host.showPopupNotification("Song Tempo: " + value);
          this.speedHasChanged = false;
       }
    })
@@ -356,6 +382,8 @@ function KeyLab() {
       this.cDevice.getParameter(j).addNameObserver(16, "None", getValueObserverFunc(j, this.parameterName));
       // Parameter Value:
       this.cDevice.getParameter(j).addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.parameterValue));
+      // Track Volume:
+      this.tracks.getTrack(j).getVolume().addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.trackVolume));
    }
    j = 8;
    // Envelope Parameter Name:
@@ -381,7 +409,7 @@ function init() {
    // Setting the device to a defined state:
    configureDeviceUsingSysex();
    // Welcome Message on Display:
-   sendTextToKeyLab("Arturia & Bitwig", "Let's Groove!");
+   sendTextToKeyLab("ARTURIA + BITWIG", "TAKE CONTROL");
    setPage();
 }
 
@@ -716,11 +744,15 @@ function setParameterButtons(isOn, index) {
       setButtonLight(index);
       kL.pPageHasChanged = true;
       if(kL.pageNames[kL.pageSelect - 2]) {
-         host.showPopupNotification("Parameter Page: " + kL.pageNames[kL.pageSelect - 2]);
+         if (kL.userNotifications) {
+            host.showPopupNotification("Parameter Page: " + kL.pageNames[kL.pageSelect - 2]);
+         }
          sendTextToKeyLab("Parameter Page:", kL.pageNames[kL.pageSelect - 2])
       }
       else {
-         host.showPopupNotification("Parameter Page: Unassigned");
+         if (kL.userNotifications) {
+            host.showPopupNotification("Parameter Page: Unassigned");
+         }
          sendTextToKeyLab("Parameter Page:", "Unassigned")
       }
    }

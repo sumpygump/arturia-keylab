@@ -161,14 +161,18 @@ SOUND_MODE.onButtonPress = function(index, pressed) {
       // Macros:
       pressed ? kL.pageSelect = 0 : setButtonLight(0);
       setDeviceIndication(true);
-      host.showPopupNotification("Active Controls: Device Macros");
+      if (kL.userNotifications) {
+         host.showPopupNotification("Active Controls: Device Macros");
+      }
       sendTextToKeyLab("Active Controls:", "Device Macros")
    }
    else if(index === 1) {
       // Common:
       pressed ? kL.pageSelect = 1 : setButtonLight(1);
       setDeviceIndication(true);
-      host.showPopupNotification("Parameter Page: Common");
+      if (kL.userNotifications) {
+         host.showPopupNotification("Parameter Page: Common");
+      }
       sendTextToKeyLab("Parameter Page:", "Common")
    }
    else {
@@ -227,7 +231,7 @@ MULTI_MODE.onEncoder = function(index, increment) {
             kL.trackHasChanged = true;
             increment < 0 ? kL.cTrack.selectPrevious() : kL.cTrack.selectNext();
          }
-         kL.displayQueue.push(["Current Track:", kL.currentTrack]);
+         //kL.displayQueue.push(["Current Track:", kL.currentTrack]);
          break;
 
       case 9:
@@ -247,17 +251,21 @@ MULTI_MODE.onFader = function(index, value) {
    if(index === 8) {
       kL.masterVolumeHasChanged = true;
       kL.masterTrack.getVolume().set(value, 128);
-      //sendTextToKeyLab("Master Volume:", kL.masterVolume);
+      sendTextToKeyLab("Master Volume:", kL.masterVolume);
    }
    else {
       kL.tracks.getTrack(index).getVolume().set(value, 128);
+      sendTextToKeyLab("Track Volume:", kL.trackVolume[index]);
    }
 };
 
 MULTI_MODE.onButtonPress = function(index, pressed) {
    switch(index) {
       case 0:
-         sendTextToKeyLab("Unassigned", "");
+         if(pressed) {
+            kL.application.toggleInspector();
+         }
+         sendTextToKeyLab("Toggle Inspector", "");
          break;
       case 1:
          if(pressed) {
@@ -284,15 +292,10 @@ MULTI_MODE.onButtonPress = function(index, pressed) {
          sendTextToKeyLab("Mixer", "");
          break;
       case 5:
-         try {
-            if(pressed) {
-               kL.application.toggleInspector();
-            }
+         if(pressed) {
+            kL.application.toggleBrowserVisibility();
+            sendTextToKeyLab("Toggle Browser ", "");
          }
-         catch(e) {
-            println("Placeholder: toggle Inspector in 1.1")
-         }
-         sendTextToKeyLab("Toggle Inspector", "");
          break;
       case 6:
          if(pressed) {
@@ -302,8 +305,8 @@ MULTI_MODE.onButtonPress = function(index, pressed) {
          break;
       case 7:
          if(pressed) {
-            kL.application.toggleBrowserVisibility();
-            sendTextToKeyLab("Toggle Browser ", "");
+            kL.application.nextProject();
+            sendTextToKeyLab("Switch to next", "Project");
          }
          break;
       case 8:
