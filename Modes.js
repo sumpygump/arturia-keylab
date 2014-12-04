@@ -43,7 +43,8 @@ Mode.prototype.onValuePreset = function(inc) {
 Mode.prototype.onValuePresetClick = function(pressed) {};
 
 Mode.prototype.onVolumeEncoder = function(inc) {
-   kL.cTrack.getVolume().inc(inc, 127);
+   kL.trackVolumeHasChanged = true;
+   kL.cTrack.getVolume().inc(inc, 128);
    sendTextToKeyLab("Track Volume:", kL.currentVolume);
 };
 
@@ -128,7 +129,7 @@ SOUND_MODE.onEncoder = function(index, inc) {
          kL.trackHasChanged = true;
          inc < 0 ? kL.cTrack.selectPrevious() : kL.cTrack.selectNext();
       }
-      kL.displayQueue.push(["Current Track:", kL.currentTrack]);
+      sendTextToKeyLab("Current Track:", kL.currentTrack);
    }
    else if(index === 9) {
       kL.deviceAccumulator += Math.abs(inc);
@@ -137,7 +138,7 @@ SOUND_MODE.onEncoder = function(index, inc) {
          kL.deviceHasChanged = true;
          kL.cDevice.switchToDevice(DeviceType.ANY, inc < 0 ? ChainLocation.PREVIOUS : ChainLocation.NEXT);
       }
-      kL.displayQueue.push(["Current Device:", kL.currentDevice]);
+      sendTextToKeyLab("Current Device:", kL.currentDevice);
    }
    else {
       // 5 - 8
@@ -146,14 +147,12 @@ SOUND_MODE.onEncoder = function(index, inc) {
 };
 
 SOUND_MODE.onFader = function(index, value) {
+   var env1;
+   var env2;
+   kL.envelopeHasChanged[index] = true;
    kL.cDevice.getEnvelopeParameter(index).set(value, 128);
-   if(kL.envelopeName[index] === "None") {
-      sendTextToKeyLab("Unassigned", "");
-   }
-   else {
-      sendTextToKeyLab(kL.envelopeName[index] + ":", kL.envelopeValue[index]);
-   }
-
+   [env1, env2] = getEnvelopeName(index);
+   sendTextToKeyLab(env1, env2);
 };
 
 SOUND_MODE.onButtonPress = function(index, pressed) {
@@ -186,20 +185,24 @@ var MULTI_MODE = new Mode("Bitwig: ", "Mix Mode");
 MULTI_MODE.onEncoder = function(index, increment) {
    switch(index) {
       case 0:
+         kL.panHasChanged = true;
          kL.cTrack.getPan().inc(increment, 127);
          sendTextToKeyLab("Pan:", kL.currentPan);
          break;
       case 1:
+         kL.send1HasChanged = true;
          kL.cTrack.getSend(0).inc(increment, 128);
-         sendTextToKeyLab(kL.currentSend1, kL.currentSend1Val);
+         sendTextToKeyLab(kL.currentSend1 + ":", kL.currentSend1Val);
          break;
       case 2:
+         kL.send2HasChanged = true;
          kL.cTrack.getSend(1).inc(increment, 128);
-         sendTextToKeyLab(kL.currentSend2, kL.currentSend2Val);
+         sendTextToKeyLab(kL.currentSend2 + ":", kL.currentSend2Val);
          break;
       case 3:
+         kL.send3HasChanged = true;
          kL.cTrack.getSend(2).inc(increment, 128);
-         sendTextToKeyLab(kL.currentSend3, kL.currentSend3Val);
+         sendTextToKeyLab(kL.currentSend3 + ":", kL.currentSend3Val);
          break;
       case 5:
          kL.positionHasChanged = true;
@@ -231,7 +234,7 @@ MULTI_MODE.onEncoder = function(index, increment) {
             kL.trackHasChanged = true;
             increment < 0 ? kL.cTrack.selectPrevious() : kL.cTrack.selectNext();
          }
-         //kL.displayQueue.push(["Current Track:", kL.currentTrack]);
+         sendTextToKeyLab("Current Track:", kL.currentTrack);
          break;
 
       case 9:
@@ -242,7 +245,7 @@ MULTI_MODE.onEncoder = function(index, increment) {
             kL.trackBankAccumulator = 0;
             increment < 0 ? kL.tracks.scrollTracksUp() : kL.tracks.scrollTracksDown();
          }
-         kL.displayQueue.push(["Scroll Tracks:", scrollDirection]);
+         sendTextToKeyLab("Scroll Tracks:", scrollDirection);
          break;
    }
 };
@@ -254,8 +257,9 @@ MULTI_MODE.onFader = function(index, value) {
       sendTextToKeyLab("Master Volume:", kL.masterVolume);
    }
    else {
-      kL.tracks.getTrack(index).getVolume().set(value, 128);
       sendTextToKeyLab("Track Volume:", kL.trackVolume[index]);
+      kL.tracksVolumesHaveChanged[index] = true;
+      kL.tracks.getTrack(index).getVolume().set(value, 128);
    }
 };
 
@@ -294,7 +298,7 @@ MULTI_MODE.onButtonPress = function(index, pressed) {
       case 5:
          if(pressed) {
             kL.application.toggleBrowserVisibility();
-            sendTextToKeyLab("Toggle Browser ", "");
+            sendTextToKeyLab("Toggle Browser", "");
          }
          break;
       case 6:

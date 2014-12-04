@@ -9,7 +9,7 @@ var MODE = null;
 function KeyLab() {
    // Midi Ports:
    //this.midiInKeys = host.getMidiInPort(0).createNoteInput("Keys", "?0????");
-   this.midiInKeys = host.getMidiInPort(0).createNoteInput("Keys", "80????", "90????", "B001??", "B002??", "B007??", "B00B??", "B040??", "C0????", "D0????", "E0????");
+   this.midiInKeys = host.getMidiInPort(0).createNoteInput("Keys", "80????", "90????", "B001??", "B002??", "B00B??", "B040??", "C0????", "D0????", "E0????");
    // Disable the consuming of events by the NoteInputs, so they are also sent to onMidi:
    this.midiInKeys.setShouldConsumeEvents(false);
 
@@ -96,6 +96,11 @@ function KeyLab() {
    this.send2HasChanged = false;
    this.send3HasChanged = false;
    this.speedHasChanged = false;
+   this.macroHasChanged = [];
+   this.commonHasChanged = [];
+   this.envelopeHasChanged = [];
+   this.parameterHasChanged = [];
+   this.tracksVolumesHaveChanged = [];
 
    this.userNotifications = true;
 
@@ -144,6 +149,11 @@ function KeyLab() {
       this.parameterName[i] = "";
       this.parameterValue[i] = "";
       this.buttonToggle[i] = false;
+      this.macroHasChanged[i] = false;
+      this.commonHasChanged[i] = false;
+      this.envelopeHasChanged[i] = false;
+      this.parameterHasChanged[i] = false;
+      this.tracksVolumesHaveChanged[i] = false;
    }
    this.envelopeName[8] = "";
    this.envelopeValue[8] = "";
@@ -156,9 +166,6 @@ function KeyLab() {
 
    this.lowestCC = 1;
    this.highestCC = 119;
-
-   // Flush Queue:
-   this.displayQueue = [];
 
    // Creating Main Views:
    this.notifications = host.getNotificationSettings();
@@ -173,7 +180,6 @@ function KeyLab() {
 
    notifications.getUserNotificationsEnabled().addValueObserver(function(on) {
       this.userNotifications = on;
-      //println(on);
    });
 
    this.notifications.setShouldShowValueNotifications(true);
@@ -193,7 +199,7 @@ function KeyLab() {
    this.masterTrack.getVolume().addValueDisplayObserver(16, "None", function(volume) {
       this.masterVolume = volume;
       if(this.masterVolumeHasChanged) {
-         displayQueue.push(["Master Volume:", volume]);
+         sendTextToKeyLab("Master Volume:", volume);
          this.masterVolumeHasChanged = false;
       }
    });
@@ -323,45 +329,60 @@ function KeyLab() {
    this.transport.getTempo().addValueDisplayObserver(16, "None", function(value) {
       this.currentSpeed = value;
       if(this.speedHasChanged) {
-         //sendTextToKeyLab("Song Tempo:", value);
-         kL.displayQueue.push(["Song Tempo:", value]);
-         //host.showPopupNotification("Song Tempo: " + value);
          this.speedHasChanged = false;
+         sendTextToKeyLab("Song Tempo:", value);
       }
    })
    this.cTrack.addNameObserver(16, "None", function(name) {
       this.currentTrack = name;
       if(this.trackHasChanged) {
-         sendTextToKeyLab("Current Track:", name);
          this.trackHasChanged = false;
+         sendTextToKeyLab("Current Track:", name);
       }
    });
    this.cTrack.getVolume().addValueDisplayObserver(16, "None", function(value) {
       this.currentVolume = value;
       if(this.trackVolumeHasChanged) {
-         sendTextToKeyLab("Track Volume:", kL.currentVolume);
+         this.trackVolumeHasChanged = false;
+         sendTextToKeyLab("Track Volume:", value);
       }
    })
    this.cTrack.getPan().addValueDisplayObserver(16, "None", function(value) {
       this.currentPan = value;
+      if(this.panHasChanged) {
+         this.panHasChanged = false;
+         sendTextToKeyLab("Track Pan:", value);
+      }
    });
    this.cTrack.getSend(0).addNameObserver(16, "None", function(name) {
       this.currentSend1 = name;
    });
    this.cTrack.getSend(0).addValueDisplayObserver(16, "None", function(value) {
       this.currentSend1Val = value;
+      if(this.send1HasChanged) {
+         this.send1HasChanged = false;
+         sendTextToKeyLab(this.currentSend1 + ":", value);
+      }
    });
    this.cTrack.getSend(1).addNameObserver(16, "None", function(name) {
       this.currentSend2 = name;
    });
    this.cTrack.getSend(1).addValueDisplayObserver(16, "None", function(value) {
       this.currentSend2Val = value;
+      if(this.send2HasChanged) {
+         this.send2HasChanged = false;
+         sendTextToKeyLab(this.currentSend2 + ":", value);
+      }
    });
    this.cTrack.getSend(2).addNameObserver(16, "None", function(name) {
       this.currentSend3 = name;
    });
    this.cTrack.getSend(2).addValueDisplayObserver(16, "None", function(value) {
       this.currentSend3Val = value;
+      if(this.send3HasChanged) {
+         this.send3HasChanged = false;
+         sendTextToKeyLab(this.currentSend3 + ":", value);
+      }
    });
 
    // Parameter Name Observers:
@@ -369,27 +390,27 @@ function KeyLab() {
       // Macro Name:
       this.cDevice.getMacro(j).addLabelObserver(16, "None", getValueObserverFunc(j, this.macroName));
       // Macro Value:
-      this.cDevice.getMacro(j).getAmount().addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.macroValue));
+      this.cDevice.getMacro(j).getAmount().addValueDisplayObserver(16, "None", getValueObserverFuncMacro(j, this.macroValue, this.macroName, this.macroHasChanged));
       // Common Parameter Name:
       this.cDevice.getCommonParameter(j).addNameObserver(16, "None", getValueObserverFunc(j, this.commonName));
       // Common Parameter Value:
-      this.cDevice.getCommonParameter(j).addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.commonValue));
+      this.cDevice.getCommonParameter(j).addValueDisplayObserver(16, "None", getValueObserverFuncCommon(j, this.commonValue, getCommonName, this.commonHasChanged));
       // Envelope Parameter Name:
       this.cDevice.getEnvelopeParameter(j).addNameObserver(16, "None", getValueObserverFunc(j, this.envelopeName));
       // Envelope Parameter Value:
-      this.cDevice.getEnvelopeParameter(j).addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.envelopeValue));
+      this.cDevice.getEnvelopeParameter(j).addValueDisplayObserver(16, "None", getValueObserverFuncCommon(j, this.envelopeValue, getEnvelopeName, this.envelopeHasChanged));
       // Parameter Name:
       this.cDevice.getParameter(j).addNameObserver(16, "None", getValueObserverFunc(j, this.parameterName));
       // Parameter Value:
-      this.cDevice.getParameter(j).addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.parameterValue));
+      this.cDevice.getParameter(j).addValueDisplayObserver(16, "None", getValueObserverFuncCommon(j, this.parameterValue, getParameterName, this.parameterHasChanged));
       // Track Volume:
-      this.tracks.getTrack(j).getVolume().addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.trackVolume));
+      this.tracks.getTrack(j).getVolume().addValueDisplayObserver(16, "None", getValueObserverFuncDisplay(j, this.trackVolume, "Track Volume:", this.tracksVolumesHaveChanged));
    }
    j = 8;
    // Envelope Parameter Name:
    this.cDevice.getEnvelopeParameter(j).addNameObserver(16, "None", getValueObserverFunc(j, this.envelopeName));
    // Envelope Parameter Value:
-   this.cDevice.getEnvelopeParameter(j).addValueDisplayObserver(16, "None", getValueObserverFunc(j, this.envelopeValue));
+   this.cDevice.getEnvelopeParameter(j).addValueDisplayObserver(16, "None", getValueObserverFuncCommon(j, this.envelopeValue, getEnvelopeName, this.envelopeHasChanged));
 
    this.cTrack.addNoteObserver(function(on, key, vel) {
       var low = this.lowestPad + (16 * this.padOffset);
@@ -642,16 +663,6 @@ function onSysex(data) {
    }
 }
 
-function flush() {
-   var temp1;
-   var temp2;
-   while(kL.displayQueue.length) {
-      [temp1, temp2] = kL.displayQueue.pop();
-      sendTextToKeyLab(temp1, temp2);
-      //println(temp1 + temp2);
-   }
-}
-
 // Set the current page:
 function setPage() {
    var previousMode = MODE;
@@ -699,32 +710,62 @@ function setPage() {
 function setDeviceValue(index, page, increment) {
    switch(page) {
       case 0:
+         kL.macroHasChanged[index] = true;
          kL.cDevice.getMacro(index).getAmount().inc(increment, 128);
-         if(kL.macroName[index]) {
-            sendTextToKeyLab(kL.macroName[index] + ":", kL.macroValue[index]);
-         }
-         else {
-            sendTextToKeyLab("Macro " + index + ":", kL.macroValue[index]);
-         }
+         sendTextToKeyLab(getMacroName(index), kL.macroValue[index]);
          break;
       case 1:
+         var com1;
+         var com2;
+         kL.commonHasChanged[index] = true;
          kL.cDevice.getCommonParameter(index).inc(increment, 128);
-         if(kL.commonName[index] === "None") {
-            sendTextToKeyLab("Unassigned", "");
-         }
-         else {
-            sendTextToKeyLab(kL.commonName[index] + ":", kL.commonValue[index]);
-         }
+         [com1, com2] = getCommonName(index);
+         sendTextToKeyLab(com1, com2);
          break;
       default:
+         var def1;
+         var def2;
+         kL.parameterHasChanged[index] = true;
          kL.cDevice.getParameter(index).inc(increment, 128);
-         if(kL.pageNames[kL.pageSelect - 2] && kL.commonName[index] !== "None") {
-            sendTextToKeyLab(kL.parameterName[index] + ":", kL.parameterValue[index]);
-         }
-         else {
-            sendTextToKeyLab("Unassigned", "");
-         }
+         [def1, def2] = getParameterName(index);
+         sendTextToKeyLab(def1, def2);
          break;
+   }
+}
+
+function getMacroName (index) {
+   if(kL.macroName[index]) {
+      return (kL.macroName[index] + ":");
+   }
+   else {
+      return ("Macro " + (index + 1) + ":");
+   }
+}
+
+function getCommonName (index) {
+   if(kL.commonName[index] === "None") {
+      return ["Unassigned", ""];
+   }
+   else {
+      return [kL.commonName[index] + ":", kL.commonValue[index]];
+   }
+}
+
+function getEnvelopeName (index) {
+   if(kL.envelopeName[index] === "None") {
+      return ["Unassigned", ""];
+   }
+   else {
+      return [kL.envelopeName[index] + ":", kL.envelopeValue[index]];
+   }
+}
+
+function getParameterName (index) {
+   if(kL.pageNames[kL.pageSelect - 2] && kL.commonName[index] !== "None") {
+      return [kL.parameterName[index] + ":", kL.parameterValue[index]];
+   }
+   else {
+      return ["Unassigned", ""];
    }
 }
 
@@ -830,15 +871,56 @@ function sendDelayedSysex(SysEx) {
    sendSysex(SysEx);
 }
 
-// Exit Function
-function exit() {
-   // Reset Working Memory to a default state:
-   resetKeyLabToAbsoluteMode();
-}
-
 // A function to create an indexed function for the Observers
 function getValueObserverFunc(index, varToStore) {
    return function(value) {
       varToStore[index] = value;
    }
+}
+
+// A function to create an indexed function for the Observers
+function getValueObserverFuncDisplay(index, varToStore, name, varToTest) {
+   return function(value) {
+      varToStore[index] = value;
+      if (varToTest[index]) {
+         varToTest[index] = false;
+         sendTextToKeyLab(name, value);
+      }
+   }
+}
+
+// A function to create an indexed function for the Macro Observers
+function getValueObserverFuncMacro(index, varToStore, name, varToTest) {
+   return function(value) {
+      varToStore[index] = value;
+      if (varToTest[index]) {
+         varToTest[index] = false;
+         sendTextToKeyLab(getMacroName(index), value);
+      }
+   }
+}
+
+// A function to create an indexed function for the Common Parameter Observers
+function getValueObserverFuncCommon(index, varToStore, name, varToTest) {
+   return function(value) {
+      varToStore[index] = value;
+      if (varToTest[index]) {
+         var temp1;
+         var temp2;
+         varToTest[index] = false;
+         [temp1, temp2] = name(index);
+         if (temp2 === "") {
+            sendTextToKeyLab(temp1, temp2);
+         }
+         else {
+            sendTextToKeyLab(temp1, value);
+         }
+      }
+   }
+}
+
+// Exit Function
+function exit() {
+   // Reset Working Memory to a default state:
+   resetKeyLabToAbsoluteMode();
 }
