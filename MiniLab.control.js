@@ -4,7 +4,7 @@ loadAPI(1);
 
 load ("Extensions.js");
 
-host.defineController("Arturia", "MiniLab", "1.0", "e48ffd90-3203-11e4-8c21-0800200c9a66");
+host.defineController("Arturia", "MiniLab", "1.1", "e48ffd90-3203-11e4-8c21-0800200c9a66");
 host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["Arturia MINILAB"], ["Arturia MINILAB"]);
 host.addDeviceNameBasedDiscoveryPair(["Arturia MINILAB MIDI 1"], ["Arturia MINILAB MIDI 1"]);
