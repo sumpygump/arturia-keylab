@@ -120,9 +120,9 @@ function configureEncoder(index, cc, relative) {
    var min = uint7ToHex(0);
    var max = uint7ToHex(127);
 
-   sendSysex("F0 00 20 6B 7F 42 02 00 01" + indexHex + mode + "F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 02" + indexHex + "00 F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 03" + indexHex + ccHex + "F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 04" + indexHex + min + "F7");
-   sendSysex("F0 00 20 6B 7F 42 02 00 05" + indexHex + max + "F7");
+   sendSysex("F0 00 20 6B 7F 42 02 00 01 " + indexHex + mode + "F7");
+   sendSysex("F0 00 20 6B 7F 42 02 00 02 " + indexHex + "00 F7");
+   sendSysex("F0 00 20 6B 7F 42 02 00 03 " + indexHex + ccHex + "F7");
+   sendSysex("F0 00 20 6B 7F 42 02 00 04 " + indexHex + min + "F7");
+   sendSysex("F0 00 20 6B 7F 42 02 00 05 " + indexHex + max + "F7");
 }
