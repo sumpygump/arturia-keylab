@@ -715,19 +715,19 @@ function setDeviceValue(index, page, increment) {
          sendTextToKeyLab(getMacroName(index), kL.macroValue[index]);
          break;
       case 1:
-         var com1;
-         var com2;
          kL.commonHasChanged[index] = true;
          kL.cDevice.getCommonParameter(index).inc(increment, 128);
-         [com1, com2] = getCommonName(index);
+         var commonName = getCommonName(index);
+         var com1 = commonName[0];
+         var com2 = commonName[1];
          sendTextToKeyLab(com1, com2);
          break;
       default:
-         var def1;
-         var def2;
          kL.parameterHasChanged[index] = true;
          kL.cDevice.getParameter(index).inc(increment, 128);
-         [def1, def2] = getParameterName(index);
+         var paramName = getParameterName(index);
+         var def1 = paramName[0];
+         var def2 = paramName[1];
          sendTextToKeyLab(def1, def2);
          break;
    }
@@ -905,10 +905,10 @@ function getValueObserverFuncCommon(index, varToStore, name, varToTest) {
    return function(value) {
       varToStore[index] = value;
       if (varToTest[index]) {
-         var temp1;
-         var temp2;
          varToTest[index] = false;
-         [temp1, temp2] = name(index);
+         var names = name(index);
+         var temp1 = names[0];
+         var temp2 = names[1];
          if (temp2 === "") {
             sendTextToKeyLab(temp1, temp2);
          }

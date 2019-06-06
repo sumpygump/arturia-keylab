@@ -147,11 +147,11 @@ SOUND_MODE.onEncoder = function(index, inc) {
 };
 
 SOUND_MODE.onFader = function(index, value) {
-   var env1;
-   var env2;
    kL.envelopeHasChanged[index] = true;
    kL.cDevice.getEnvelopeParameter(index).set(value, 128);
-   [env1, env2] = getEnvelopeName(index);
+   var envelopeName = getEnvelopeName(index);
+   var env1 = envelopeName[0];
+   var env2 = envelopeName[1];
    sendTextToKeyLab(env1, env2);
 };
 
